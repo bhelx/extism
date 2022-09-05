@@ -6,7 +6,13 @@ use extism_manifest::Manifest;
 mod bindings;
 
 #[repr(transparent)]
-pub struct Plugin(isize);
+pub struct Plugin(pub isize);
+
+impl Plugin {
+    pub fn as_isize(self) -> isize {
+        self.0
+    }
+}
 
 #[derive(Debug)]
 pub enum Error {

@@ -1,0 +1,19 @@
+[package]
+name = "extism_nif"
+version = "0.1.0"
+edition = "2021"
+authors = ["Benjamin Eckel <bhelx@simst.im>"]
+
+[lib]
+name = "extism_nif"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.25.0"
+bufstream = "0.1.4"
+extism = { version = "0.0.1-alpha", path = "../../../rust" }
+extism-manifest = { version = "0.0.1-alpha", path = "../../../manifest" }
+serde = { version = "1.0" }
+serde_json = { version = "1.0" }
+
