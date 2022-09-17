@@ -4,7 +4,6 @@ defmodule ExtismTest do
 
   test "counts vowels" do
     path = Path.join([__DIR__, "../../wasm/code.wasm"])
-    IO.puts path
     manifest = %{wasm: [%{path: path}]}
     result =
        with {:ok, plugin} <- Extism.Plugin.new(manifest),
