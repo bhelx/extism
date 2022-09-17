@@ -11,6 +11,8 @@ jobs:
   build_and_test:
     name: Build & Test
     runs-on: ${{ matrix.os }}
+    env:
+      MIX_ENV: test
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -52,15 +54,17 @@ jobs:
           otp-version: '25.0'
           elixir-version: '1.14.0'
 
+      - name: Test Elixir Host SDK Get Deps
+        run: cd elixir && mix deps.get
+
+      - name: Test Elixir Host SDK Deps Compile
+        run: cd elixir && mix deps.compile 
+
+      - name: Test Elixir Host SDK Deps Compile
+        run: cd elixir && mix compile --warnings-as-errors
+
       - name: Test Elixir Host SDK
-        env:
-          MIX_ENV: test
-        run: 
-          cd elixir &&
-          mix deps.get && 
-          mix deps.compile && 
-          mix compile --warnings-as-errors && 
-          mix test
+        run: cd elixir && mix test
 
       - name: Setup Go env
         uses: actions/setup-go@v3
