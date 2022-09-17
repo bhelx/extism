@@ -45,15 +45,13 @@ jobs:
         shell: bash
         run: sudo make install
 
-      - name: Setup Elixir SDK
+      - name: Setup Elixir Host SDK
         uses: actions/setup-elixir@v1
         with:
-          otp-version: '22.2'
-          elixir-version: '1.9.4'
-        - run: mix deps.get
-        - run: mix test
+          otp-version: '25.0'
+          elixir-version: '1.14.0'
 
-      - name: Test Elixir SDK
+      - name: Test Elixir Host SDK
         run: |
           cd elixir
           mix deps.get
