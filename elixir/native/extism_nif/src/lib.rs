@@ -21,8 +21,8 @@ fn plugin_new_with_manifest(manifest_payload: String) -> Result<isize, Error> {
     match serde_json::from_str(&manifest_payload) {
         Ok(manifest) => {
             match Plugin::new_with_manifest(&manifest, false) {
-                Ok(plugin) => Ok(plugin.as_isize()),
-                Err(_e) => Err(Error::Term(Box::new("Could not load plugin")))
+                Err(_e) => Err(Error::Term(Box::new("Could not load plugin"))),
+                Ok(plugin) => Ok(plugin.as_isize())
             }
         },
         Err(_e) => Err(Error::Term(Box::new("Could not parse manifest")))
