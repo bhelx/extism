@@ -6,11 +6,17 @@ use extism_manifest::Manifest;
 mod bindings;
 
 #[repr(transparent)]
-pub struct Plugin(pub isize);
+pub struct Plugin(isize);
 
-impl Plugin {
-    pub fn as_isize(self) -> isize {
-        self.0
+impl From<Plugin> for isize {
+    fn from(p: Plugin) -> Self {
+        p.0 as isize
+    }
+}
+
+impl From<isize> for Plugin {
+    fn from(i: isize) -> Self {
+        Plugin(i)
     }
 }
 
