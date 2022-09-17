@@ -37,6 +37,6 @@ defmodule ExtismTest do
 
   test "has_function" do
     assert Extism.Plugin.has_function(new_plugin(), "count_vowels")
-    assert !Extism.Plugin.has_function(new_plugin(), "unknown")
+    assert !Extism.Plugin.has_function(new_plugin(), "count_vowels")
   end
 end
