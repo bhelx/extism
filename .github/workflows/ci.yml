@@ -129,6 +129,7 @@ jobs:
           php index.php
 
       - name: Setup Elixir env
+        uses: actions/checkout@v2
         uses: actions/setup-elixir@v1
         with:
           elixir-version: 1.9.4 # Define the elixir version [required]
@@ -140,7 +141,6 @@ jobs:
         run: |
           cd elixir
           mix deps.get
-          mix deps.compile
           mix test
 
   sdk_api_coverage:
