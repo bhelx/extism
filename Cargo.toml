@@ -7,3 +7,4 @@ members = [
 exclude = [
   "elixir/native/extism_nif"
 ]
+
