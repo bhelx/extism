@@ -56,8 +56,7 @@ jobs:
         run: |
           cd elixir
           mix deps.get
-          mix compile
-          mix test
+          MIX_ENV=test mix do compile, test
 
       - name: Setup Go env
         uses: actions/setup-go@v3
