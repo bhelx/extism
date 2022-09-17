@@ -64,7 +64,14 @@ jobs:
         run: cd elixir && mix compile --warnings-as-errors
 
       - name: Test Elixir Host SDK list content
-        run: ls -lah /home/runner/work/extism/extism/elixir/_build/
+        run: |
+          ls -lah /home/runner/work/extism/extism/elixir/_build/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/native/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/native/libextism_nif
 
       - name: Test Elixir Host SDK
         run: cd elixir && mix test
