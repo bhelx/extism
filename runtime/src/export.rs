@@ -20,13 +20,42 @@ macro_rules! memory {
     };
 }
 
-pub(crate) fn input_offset(
+pub(crate) fn input_length(
     caller: Caller<Internal>,
     _input: &[Val],
     output: &mut [Val],
 ) -> Result<(), Trap> {
     let data: &Internal = caller.data();
-    output[0] = Val::I64(data.input_offset as i64);
+    output[0] = Val::I64(data.input_length as i64);
+    return Ok(());
+}
+
+pub(crate) fn input_load_u8(
+    caller: Caller<Internal>,
+    input: &[Val],
+    output: &mut [Val],
+) -> Result<(), Trap> {
+    let data: &Internal = caller.data();
+    if data.input.is_null() {
+        return Ok(());
+    }
+    output[0] = unsafe { Val::I32(*data.input.add(input[0].unwrap_i64() as usize) as i32) };
+    Ok(())
+}
+
+pub(crate) fn input_load_u64(
+    caller: Caller<Internal>,
+    input: &[Val],
+    output: &mut [Val],
+) -> Result<(), Trap> {
+    let data: &Internal = caller.data();
+    if data.input.is_null() {
+        return Ok(());
+    }
+    let offs = input[0].unwrap_i64() as usize;
+    let slice = unsafe { std::slice::from_raw_parts(data.input.add(offs), 8) };
+    let byte = u64::from_ne_bytes(slice.try_into().unwrap());
+    output[0] = Val::I64(byte as i64);
     Ok(())
 }
 
@@ -183,7 +212,10 @@ pub(crate) fn config_get(
     let val = plugin!(data).manifest.as_ref().config.get(str);
     let mem = match val {
         Some(f) => memory!(mut data).alloc_bytes(f.as_bytes())?,
-        None => return Err(Trap::new("Invalid config key")),
+        None => {
+            output[0] = Val::I64(0);
+            return Ok(());
+        }
     };
 
     output[0] = Val::I64(mem.offset as i64);
@@ -229,33 +261,33 @@ pub(crate) fn var_set(
         size += v.len();
     }
 
-    let offset1 = input[1].unwrap_i64() as usize;
+    let voffset = input[1].unwrap_i64() as usize;
 
     // If the store is larger than 100MB then stop adding things
-    if size > 1024 * 1024 * 100 && offset1 != 0 {
+    if size > 1024 * 1024 * 100 && voffset != 0 {
         return Err(Trap::new("Variable store is full"));
     }
 
-    let offset = input[0].unwrap_i64() as usize;
-    let length = match memory!(data).block_length(offset) {
+    let koffset = input[0].unwrap_i64() as usize;
+    let klength = match memory!(data).block_length(koffset) {
         Some(x) => x,
-        None => return Err(Trap::new("Invalid offset in call to var_set")),
+        None => return Err(Trap::new("Invalid offset for key in call to var_set")),
     };
 
-    let kbuf = memory!(data).get((offset, length));
+    let kbuf = memory!(data).get((koffset, klength));
     let kstr = unsafe { std::str::from_utf8_unchecked(kbuf) };
 
-    let length1 = match memory!(data).block_length(offset) {
-        Some(x) => x,
-        None => return Err(Trap::new("Invalid offset in call to var_set")),
-    };
-
-    if offset1 == 0 {
+    if voffset == 0 {
         data.vars.remove(kstr);
         return Ok(());
     }
 
-    let vbuf = memory!(data).get((offset1, length1));
+    let vlength = match memory!(data).block_length(voffset) {
+        Some(x) => x,
+        None => return Err(Trap::new("Invalid offset for value in call to var_set")),
+    };
+
+    let vbuf = memory!(data).get((voffset, vlength));
 
     data.vars.insert(kstr.to_string(), vbuf.to_vec());
     Ok(())
@@ -330,10 +362,68 @@ pub(crate) fn length(
 ) -> Result<(), Trap> {
     let data: &mut Internal = caller.data_mut();
     let offset = input[0].unwrap_i64() as usize;
+    if offset == 0 {
+        output[0] = Val::I64(0);
+        return Ok(());
+    }
     let length = match memory!(data).block_length(offset) {
         Some(x) => x,
         None => return Err(Trap::new("Unable to find length for offset")),
     };
     output[0] = Val::I64(length as i64);
     Ok(())
+}
+
+pub(crate) fn log(
+    level: log::Level,
+    caller: Caller<Internal>,
+    input: &[Val],
+    _output: &mut [Val],
+) -> Result<(), Trap> {
+    let data: &Internal = caller.data();
+    let offset = input[0].unwrap_i64() as usize;
+
+    let length = match memory!(data).block_length(offset) {
+        Some(x) => x,
+        None => return Err(Trap::new("Invalid offset in call to http_request")),
+    };
+    let buf = memory!(data).get((offset, length));
+
+    match std::str::from_utf8(buf) {
+        Ok(buf) => log::log!(level, "{}", buf),
+        Err(_) => log::log!(level, "{:?}", buf),
+    }
+    Ok(())
+}
+
+pub(crate) fn log_warn(
+    caller: Caller<Internal>,
+    input: &[Val],
+    _output: &mut [Val],
+) -> Result<(), Trap> {
+    log(log::Level::Warn, caller, input, _output)
+}
+
+pub(crate) fn log_info(
+    caller: Caller<Internal>,
+    input: &[Val],
+    _output: &mut [Val],
+) -> Result<(), Trap> {
+    log(log::Level::Info, caller, input, _output)
+}
+
+pub(crate) fn log_debug(
+    caller: Caller<Internal>,
+    input: &[Val],
+    _output: &mut [Val],
+) -> Result<(), Trap> {
+    log(log::Level::Debug, caller, input, _output)
+}
+
+pub(crate) fn log_error(
+    caller: Caller<Internal>,
+    input: &[Val],
+    _output: &mut [Val],
+) -> Result<(), Trap> {
+    log(log::Level::Error, caller, input, _output)
 }

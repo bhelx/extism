@@ -13,8 +13,8 @@ pub struct Plugin {
 }
 
 pub struct Internal {
-    pub input_offset: usize,
     pub input_length: usize,
+    pub input: *const u8,
     pub output_offset: usize,
     pub output_length: usize,
     pub vars: BTreeMap<String, Vec<u8>>,
@@ -29,10 +29,10 @@ impl Internal {
             wasi = wasi.env(k, v)?;
         }
         Ok(Internal {
-            input_offset: 0,
             input_length: 0,
             output_offset: 0,
             output_length: 0,
+            input: std::ptr::null(),
             wasi: wasi.build(),
             vars: BTreeMap::new(),
             plugin: std::ptr::null_mut(),
@@ -63,14 +63,6 @@ impl Plugin {
             let entry = modules.iter().last().unwrap();
             (entry.0.as_str(), entry.1)
         });
-
-        // Collect exports
-        let mut exports = BTreeMap::new();
-        for (_name, module) in modules.iter() {
-            for export in module.exports() {
-                exports.insert(export.name(), export);
-            }
-        }
 
         macro_rules! define_funcs {
             ($m:expr, { $($name:ident($($args:expr),*) $(-> $($r:expr),*)?);* $(;)?}) => {
@@ -105,7 +97,9 @@ impl Plugin {
                         store_u8(I64, I32);
                         store_u32(I64, I32);
                         store_u64(I64, I64);
-                        input_offset() -> I64;
+                        input_length() -> I64;
+                        input_load_u8(I64) -> I32;
+                        input_load_u64(I64) -> I64;
                         output_set(I64, I64);
                         error_set(I64);
                         config_get(I64) -> I64;
@@ -113,13 +107,11 @@ impl Plugin {
                         var_set(I64, I64);
                         http_request(I64, I64) -> I64;
                         length(I64) -> I64;
+                        log_warn(I64);
+                        log_info(I64);
+                        log_debug(I64);
+                        log_error(I64);
                     });
-                }
-
-                // Define memory or check to ensure the symbol is exported by another module
-                // since it doesn't match one of our known exports
-                if !module_name.starts_with("wasi") && !exports.contains_key(name) {
-                    return Err(anyhow::format_err!("Invalid export: {module_name}::{name}"));
                 }
             }
         }
@@ -174,11 +166,14 @@ impl Plugin {
     }
 
     /// Store input in memory and initialize `Internal` pointer
-    pub fn set_input(&mut self, handle: MemoryBlock) {
+    pub fn set_input(&mut self, input: *const u8, mut len: usize) {
+        if input.is_null() {
+            len = 0;
+        }
         let ptr = self as *mut _;
         let internal = self.memory.store.data_mut();
-        internal.input_offset = handle.offset;
-        internal.input_length = handle.length;
+        internal.input = input;
+        internal.input_length = len;
         internal.plugin = ptr;
     }
 

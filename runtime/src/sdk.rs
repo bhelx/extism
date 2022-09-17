@@ -29,11 +29,41 @@ pub unsafe extern "C" fn extism_plugin_register(
         Err(e) => e.into_inner(),
     };
 
-    // Acquire lock and add plugin to registry
     plugins.push(plugin);
     let id = (plugins.len() - 1) as PluginIndex;
     info!("New plugin added: {id}");
     id
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn extism_plugin_update(
+    index: PluginIndex,
+    wasm: *const u8,
+    wasm_size: Size,
+    with_wasi: bool,
+) -> bool {
+    let index = index as usize;
+    trace!("Call to extism_plugin_update with wasm pointer {:?}", wasm);
+    let data = std::slice::from_raw_parts(wasm, wasm_size as usize);
+    let plugin = match Plugin::new(data, with_wasi) {
+        Ok(x) => x,
+        Err(e) => {
+            error!("Error creating Plugin: {:?}", e);
+            return false;
+        }
+    };
+
+    let mut plugins = match PLUGINS.lock() {
+        Ok(p) => p,
+        Err(e) => e.into_inner(),
+    };
+
+    if index < plugins.len() {
+        plugins[index] = plugin;
+    }
+
+    info!("Plugin updated: {index}");
+    true
 }
 
 #[no_mangle]
@@ -111,17 +141,8 @@ pub unsafe extern "C" fn extism_call(
         None => return plugin.error(format!("Function not found: {name}"), -1),
     };
 
-    // Write input to memory
-    let data = std::slice::from_raw_parts(data, data_len as usize);
-    let handle = match plugin.memory.alloc_bytes(data) {
-        Ok(x) => x,
-        Err(e) => return plugin.error(e.context("Unable to allocate bytes"), -1),
-    };
-
-    plugin.dump_memory();
-
     // Always needs to be called before `func.call()`
-    plugin.set_input(handle);
+    plugin.set_input(data, data_len as usize);
 
     // Call function with offset+length pointing to input data.
     let mut results = vec![Val::I32(0)];
@@ -164,21 +185,17 @@ pub unsafe extern "C" fn extism_output_length(plugin: PluginIndex) -> Size {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn extism_output_get(plugin: PluginIndex, buf: *mut u8, len: Size) {
-    trace!("Call to extism_output_get for plugin {plugin}, length {len}");
+pub unsafe extern "C" fn extism_output_get(plugin: PluginIndex) -> *const u8 {
+    trace!("Call to extism_output_get for plugin {plugin}");
 
     let plugin = PluginRef::new(plugin);
     let data = plugin.as_ref().memory.store.data();
 
-    let slice = std::slice::from_raw_parts_mut(buf, len as usize);
     plugin
         .as_ref()
         .memory
-        .read(
-            MemoryBlock::new(data.output_offset, data.output_length),
-            slice,
-        )
-        .expect("Out of bounds read in extism_output_get");
+        .get(MemoryBlock::new(data.output_offset, data.output_length))
+        .as_ptr()
 }
 
 #[no_mangle]
@@ -201,7 +218,7 @@ pub unsafe extern "C" fn extism_log_file(
             }
         }
     } else {
-        "-"
+        "stderr"
     };
 
     let level = if log_level.is_null() {
@@ -223,20 +240,26 @@ pub unsafe extern "C" fn extism_log_file(
         }
     };
 
-    let encoder = Box::new(PatternEncoder::new("{t} {l} {d} (({f}:{L})) - {m}\n"));
+    let encoder = Box::new(PatternEncoder::new("{t} {l} {d} - {m}\n"));
 
-    let logfile: Box<dyn log4rs::append::Append> = if file == "-" {
-        let console = ConsoleAppender::builder().encoder(encoder);
-        Box::new(console.build())
-    } else {
-        match FileAppender::builder().encoder(encoder).build(file) {
-            Ok(x) => Box::new(x),
-            Err(e) => {
-                error!("Unable to set up log encoder: {e:?}");
-                return false;
+    let logfile: Box<dyn log4rs::append::Append> =
+        if file == "-" || file == "stdout" || file == "stderr" {
+            let target = if file == "-" || file == "stdout" {
+                log4rs::append::console::Target::Stdout
+            } else {
+                log4rs::append::console::Target::Stderr
+            };
+            let console = ConsoleAppender::builder().target(target).encoder(encoder);
+            Box::new(console.build())
+        } else {
+            match FileAppender::builder().encoder(encoder).build(file) {
+                Ok(x) => Box::new(x),
+                Err(e) => {
+                    error!("Unable to set up log encoder: {e:?}");
+                    return false;
+                }
             }
-        }
-    };
+        };
 
     let config = match Config::builder()
         .appender(Appender::builder().build("logfile", logfile))

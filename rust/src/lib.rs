@@ -29,7 +29,7 @@ impl From<serde_json::Error> for Error {
 
 impl Plugin {
     pub fn new_with_manifest(manifest: &Manifest, wasi: bool) -> Result<Plugin, Error> {
-        let data = serde_json::to_vec(&manifest)?;
+        let data = serde_json::to_vec(manifest)?;
         Self::new(data, wasi)
     }
 
@@ -47,6 +47,22 @@ impl Plugin {
         }
 
         Ok(Plugin(plugin as isize))
+    }
+
+    pub fn update(&mut self, data: impl AsRef<[u8]>, wasi: bool) -> bool {
+        unsafe {
+            bindings::extism_plugin_update(
+                self.0 as i32,
+                data.as_ref().as_ptr(),
+                data.as_ref().len() as u64,
+                wasi,
+            )
+        }
+    }
+
+    pub fn update_manifest(&mut self, manifest: &Manifest, wasi: bool) -> Result<bool, Error> {
+        let data = serde_json::to_vec(manifest)?;
+        Ok(self.update(data, wasi))
     }
 
     pub fn set_config(&self, config: &BTreeMap<String, String>) -> Result<(), Error> {
@@ -94,7 +110,7 @@ impl Plugin {
         unsafe { bindings::extism_function_exists(self.0 as i32, name.as_ptr() as *const _) }
     }
 
-    pub fn call(&self, name: impl AsRef<str>, input: impl AsRef<[u8]>) -> Result<Vec<u8>, Error> {
+    pub fn call(&self, name: impl AsRef<str>, input: impl AsRef<[u8]>) -> Result<&[u8], Error> {
         let name = std::ffi::CString::new(name.as_ref()).expect("Invalid function name");
         let rc = unsafe {
             bindings::extism_call(
@@ -116,12 +132,10 @@ impl Plugin {
         }
 
         let out_len = unsafe { bindings::extism_output_length(self.0 as i32) };
-        let mut out_buf = vec![0; out_len as usize];
         unsafe {
-            bindings::extism_output_get(self.0 as i32, out_buf.as_mut_ptr() as *mut _, out_len)
+            let ptr = bindings::extism_output_get(self.0 as i32);
+            Ok(std::slice::from_raw_parts(ptr, out_len as usize))
         }
-
-        Ok(out_buf)
     }
 }
 

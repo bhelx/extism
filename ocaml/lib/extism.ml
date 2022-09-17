@@ -44,6 +44,14 @@ module Bindings = struct
     fn "extism_plugin_register"
       (string @-> uint64_t @-> bool @-> returning int32_t)
 
+  let extism_plugin_update =
+    fn "extism_plugin_update"
+      (int32_t @-> string @-> uint64_t @-> bool @-> returning bool)
+
+  let extism_plugin_config =
+    fn "extism_plugin_config"
+      (int32_t @-> string @-> uint64_t @-> returning bool)
+
   let extism_call =
     fn "extism_call"
       (int32_t @-> string @-> ptr char @-> uint64_t @-> returning int32_t)
@@ -58,7 +66,7 @@ module Bindings = struct
     fn "extism_output_length" (int32_t @-> returning uint64_t)
 
   let extism_output_get =
-    fn "extism_output_get" (int32_t @-> ptr char @-> uint64_t @-> returning void)
+    fn "extism_output_get" (int32_t @-> returning (ptr char))
 
   let extism_log_file =
     fn "extism_log_file" (string @-> string_opt @-> returning bool)
@@ -135,17 +143,45 @@ exception Failed_to_load_plugin
 
 let set_log_file ?level filename = Bindings.extism_log_file filename level
 
-let register ?(wasi = false) wasm =
+let set_config plugin config =
+  match config with
+  | Some config ->
+      let config = Manifest.yojson_of_config config |> Yojson.Safe.to_string in
+      let _ =
+        Bindings.extism_plugin_config plugin config
+          (Unsigned.UInt64.of_int (String.length config))
+      in
+      ()
+  | None -> ()
+
+let register ?config ?(wasi = false) wasm =
   let id =
     Bindings.extism_plugin_register wasm
       (Unsigned.UInt64.of_int (String.length wasm))
       wasi
   in
-  if id < 0l then raise Failed_to_load_plugin else { id }
+  if id < 0l then raise Failed_to_load_plugin;
+  set_config id config;
+  { id }
 
-let register_manifest ?wasi manifest =
+let register_manifest ?config ?wasi manifest =
   let data = Manifest.json manifest in
-  register ?wasi data
+  register ?config ?wasi data
+
+let update { id } ?config ?(wasi = false) wasm =
+  let ok =
+    Bindings.extism_plugin_update id wasm
+      (Unsigned.UInt64.of_int (String.length wasm))
+      wasi
+  in
+  if ok then
+    let () = set_config id config in
+    true
+  else false
+
+let update_manifest plugin ?config ?wasi manifest =
+  let data = Manifest.json manifest in
+  update plugin ?config ?wasi data
 
 let call' f { id } ~name input len =
   let rc = f id name input len in
@@ -155,9 +191,12 @@ let call' f { id } ~name input len =
     | Some msg -> Error (`Msg msg)
   else
     let out_len = Bindings.extism_output_length id in
-    let buf = Bigstringaf.create (Unsigned.UInt64.to_int out_len) in
-    let ptr = Ctypes.bigarray_start Ctypes.array1 buf in
-    let () = Bindings.extism_output_get id ptr out_len in
+    let ptr = Bindings.extism_output_get id in
+    let buf =
+      Ctypes.bigarray_of_ptr Ctypes.array1
+        (Unsigned.UInt64.to_int out_len)
+        Char ptr
+    in
     Ok buf
 
 let call_bigstring t ~name input =

@@ -1,15 +1,18 @@
 #pragma once
 
-#include <stdarg.h>
-#include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdbool.h>
 
 typedef int32_t ExtismPlugin;
 
 typedef uint64_t ExtismSize;
 
 ExtismPlugin extism_plugin_register(const uint8_t *wasm, ExtismSize wasm_size, bool with_wasi);
+
+bool extism_plugin_update(ExtismPlugin index,
+                          const uint8_t *wasm,
+                          ExtismSize wasm_size,
+                          bool with_wasi);
 
 bool extism_plugin_config(ExtismPlugin plugin, const uint8_t *json, ExtismSize json_size);
 
@@ -24,6 +27,6 @@ const char *extism_error(ExtismPlugin plugin);
 
 ExtismSize extism_output_length(ExtismPlugin plugin);
 
-void extism_output_get(ExtismPlugin plugin, uint8_t *buf, ExtismSize len);
+const uint8_t *extism_output_get(ExtismPlugin plugin);
 
 bool extism_log_file(const char *filename, const char *log_level);

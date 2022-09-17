@@ -11,6 +11,7 @@ import (
 /*
 #cgo pkg-config: libextism.pc
 #include <extism.h>
+#include <stdlib.h>
 */
 import "C"
 
@@ -80,6 +81,16 @@ func register(data []byte, wasi bool) (Plugin, error) {
 	return Plugin{id: int32(plugin)}, nil
 }
 
+func update(plugin int32, data []byte, wasi bool) bool {
+	ptr := makePointer(data)
+	return bool(C.extism_plugin_update(
+		C.int32_t(plugin),
+		(*C.uchar)(ptr),
+		C.uint64_t(len(data)),
+		C._Bool(wasi),
+	))
+}
+
 func LoadManifest(manifest Manifest, wasi bool) (Plugin, error) {
 	data, err := json.Marshal(manifest)
 	if err != nil {
@@ -96,6 +107,24 @@ func LoadPlugin(module io.Reader, wasi bool) (Plugin, error) {
 	}
 
 	return register(wasm, wasi)
+}
+
+func (p *Plugin) Update(module io.Reader, wasi bool) (bool, error) {
+	wasm, err := io.ReadAll(module)
+	if err != nil {
+		return false, err
+	}
+
+	return update(p.id, wasm, wasi), nil
+}
+
+func (p *Plugin) UpdateManifest(manifest Manifest, wasi bool) (bool, error) {
+	data, err := json.Marshal(manifest)
+	if err != nil {
+		return false, err
+	}
+
+	return update(p.id, data, wasi), nil
 }
 
 func (plugin Plugin) SetConfig(data map[string][]byte) error {
@@ -120,20 +149,25 @@ func (plugin Plugin) Call(functionName string, input []byte) ([]byte, error) {
 	C.free(unsafe.Pointer(name))
 
 	if rc != 0 {
-		error := C.extism_error(C.int32_t(plugin.id))
-		if error != nil {
-			return nil, errors.New(
-				fmt.Sprintf("ERROR (extism plugin code: %d): %s", rc, C.GoString(error)),
-			)
+		err := C.extism_error(C.int32_t(plugin.id))
+		msg := "<unset by plugin>"
+		if err != nil {
+			msg = C.GoString(err)
 		}
+
+		return nil, errors.New(
+			fmt.Sprintf("Plugin error: %s, code: %d", msg, rc),
+		)
 	}
 
 	length := C.extism_output_length(C.int32_t(plugin.id))
-	buf := make([]byte, length)
 
 	if length > 0 {
-		C.extism_output_get(C.int32_t(plugin.id), (*C.uchar)(unsafe.Pointer(&buf[0])), length)
+		x := C.extism_output_get(C.int32_t(plugin.id))
+		y := (*[]byte)(unsafe.Pointer(&x))
+		return []byte((*y)[0:length]), nil
+
 	}
 
-	return buf, nil
+	return []byte{}, nil
 }
