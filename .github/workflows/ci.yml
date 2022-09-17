@@ -71,7 +71,6 @@ jobs:
           ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/
           ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/
           ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/native/
-          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/native/libextism_nif
 
       - name: Test Elixir Host SDK
         run: cd elixir && mix test
