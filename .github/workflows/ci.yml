@@ -48,6 +48,7 @@ jobs:
       - name: Setup Elixir Host SDK
         uses: actions/setup-elixir@v1
         with:
+          experimental-otp: true
           otp-version: '25.0'
           elixir-version: '1.14.0'
 
