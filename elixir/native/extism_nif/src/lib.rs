@@ -48,3 +48,4 @@ rustler::init!("Elixir.Extism.Native", [
     call_plugin,
 ]);
 //load = load);
+
