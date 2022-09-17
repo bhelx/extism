@@ -20,8 +20,10 @@ mod atoms {
 fn plugin_new_with_manifest(manifest_payload: String) -> Result<isize, Error> {
     match serde_json::from_str(&manifest_payload) {
         Ok(manifest) => {
-            let plugin = Plugin::new_with_manifest(&manifest, false).unwrap();
-            Ok(plugin.as_isize())
+            match Plugin::new_with_manifest(&manifest, false) {
+                Ok(plugin) => Ok(plugin.as_isize()),
+                Err(_e) => Err(Error::Term(Box::new("Could not load plugin")))
+            }
         },
         Err(_e) => Err(Error::Term(Box::new("Could not parse manifest")))
     }
@@ -30,9 +32,15 @@ fn plugin_new_with_manifest(manifest_payload: String) -> Result<isize, Error> {
  #[rustler::nif]
 fn call_plugin(plugin_iz: isize, name: String, input: String) -> Result<String, Error> {
     let plugin = Plugin(plugin_iz);
-    let result = plugin.call(name, input).unwrap();
-    let output = str::from_utf8(&result).unwrap().to_string();
-    Ok(output)
+    match plugin.call(name, input) {
+        Err(_e) => Err(Error::Term(Box::new("Failed to call plugin"))),
+        Ok(result) => {
+            match str::from_utf8(&result) {
+                Ok(output) => Ok(output.to_string()),
+                Err(_e) => Err(Error::Term(Box::new("Could not read output from plugin")))
+            }
+        }
+    }
 }
 
 rustler::init!("Elixir.Extism.Native", [

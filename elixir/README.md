@@ -16,7 +16,7 @@ end
 
 ```elixir
 # point to some wasm code, this is the count_vowels example that ships with extism
-manifest = %{ wasm: [ %{ path: "/Users/ben/code/extism/wasm/code.wasm" } ]
+manifest = %{ wasm: [ %{ path: "/Users/ben/code/extism/wasm/code.wasm" } ]}
 {:ok, plugin} = Extism.Plugin.new(manifest)
 # {:ok,
 # %Extism.Plugin{
