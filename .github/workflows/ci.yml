@@ -63,6 +63,9 @@ jobs:
       - name: Test Elixir Host SDK Deps Compile
         run: cd elixir && mix compile --warnings-as-errors
 
+      - name: Test Elixir Host SDK list content
+        run: ls -lah /home/runner/work/extism/extism/elixir/_build/
+
       - name: Test Elixir Host SDK
         run: cd elixir && mix test
 
