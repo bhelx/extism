@@ -1,7 +1,9 @@
-use rustler::{Error};
+use rustler::{Error, Atom};
 use extism::{Plugin};
 use std::str;
 use serde_json;
+use std::path::Path;
+use std::str::FromStr;
 
 mod atoms {
     rustler::atoms! {
@@ -57,10 +59,24 @@ fn update_manifest(plugin_iz: isize, manifest_payload: String, wasi: bool) -> Re
     }
 }
 
+#[rustler::nif]
+fn set_log_file(plugin_iz: isize, filename: String, log_level: String) -> Result<Atom, Error> {
+    let plugin = &Plugin(plugin_iz);
+    let path = Path::new(&filename);
+    match log::LevelFilter::from_str(&log_level) {
+        Err(_e) =>  Err(Error::Term(Box::new(format!("Invalid log level {}", log_level)))),
+        Ok(level) => {
+            plugin.set_log_file(path, Some(level));
+            Ok(atoms::ok())
+        }
+    }
+}
+
 rustler::init!("Elixir.Extism.Native", [
     plugin_new_with_manifest,
     call_plugin,
     update_manifest,
+    set_log_file,
 ]);
 //load = load);
 

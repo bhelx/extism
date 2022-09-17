@@ -16,4 +16,5 @@ extism = { version = "0.0.1-alpha", path = "../../../rust" }
 extism-manifest = { version = "0.0.1-alpha", path = "../../../manifest" }
 serde = { version = "1.0" }
 serde_json = { version = "1.0" }
+log = "0.4"
 

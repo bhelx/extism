@@ -39,6 +39,10 @@ defmodule Extism.Plugin do
       res -> {:ok, res}
     end
   end
+
+  def set_log_file(plugin, filename, log_level) do
+    Extism.Native.set_log_file(plugin.resource, filename, log_level)
+  end
 end
 
 defimpl Inspect, for: Extim.Plugin do

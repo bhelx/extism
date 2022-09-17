@@ -22,4 +22,16 @@ defmodule ExtismTest do
     manifest = %{wasm: [%{path: path}]}
     assert Extism.Plugin.update(plugin, manifest, true) == {:ok, true}
   end
+
+  test "errors on bad manifest" do
+    {:error, _msg} = Extism.Plugin.new(%{"wasm" => 123})
+  end
+
+  test "errors on unknown function" do
+    {:error, _msg} = Extism.Plugin.call(new_plugin(), "unknown", "this is a test")
+  end
+
+  test "set_log_file" do
+    assert Extism.Plugin.set_log_file(new_plugin(), "/tmp/logfile.log", "debug")
+  end
 end
