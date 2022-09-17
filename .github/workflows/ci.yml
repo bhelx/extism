@@ -46,10 +46,12 @@ jobs:
         run: sudo make install
 
       - name: Setup Elixir SDK
-        run: wget https://packages.erlang-solutions.com/erlang/debian/pool/elixir_1.13.0-1~ubuntu~focal_all.deb && sudo dpkg -i 'elixir_1.13.0-1~ubuntu~focal_all.deb'
-
-      - name: Install hex
-        run: mix local.hex --force
+        - uses: actions/setup-elixir@v1
+        with:
+          otp-version: '22.2'
+          elixir-version: '1.9.4'
+        - run: mix deps.get
+        - run: mix test
 
       - name: Test Elixir SDK
         run: |
