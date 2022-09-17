@@ -46,17 +46,21 @@ jobs:
         run: sudo make install
 
       - name: Setup Elixir Host SDK
-        uses: actions/setup-elixir@v1
+        uses: erlef/setup-beam@v1
         with:
           experimental-otp: true
           otp-version: '25.0'
           elixir-version: '1.14.0'
 
       - name: Test Elixir Host SDK
-        run: |
+        env:
+          MIX_ENV: test
+        run: 
           cd elixir
           mix deps.get
-          MIX_ENV=test mix do compile, test
+          mix deps.compile
+          mix compile --warnings-as-errors
+          mix test
 
       - name: Setup Go env
         uses: actions/setup-go@v3
