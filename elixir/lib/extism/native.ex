@@ -7,6 +7,7 @@ defmodule Extism.Native do
   def call_plugin(_plugin, _name, _input), do: error()
   def update_manifest(_plugin, _manifest, _wasi), do: error()
   def set_log_file(_plugin, _filename, _level), do: error()
+  def plugin_has_function(_plugin, _function_name), do: error()
 
   defp error, do: :erlang.nif_error(:nif_not_loaded)
 end

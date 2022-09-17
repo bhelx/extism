@@ -72,11 +72,18 @@ fn set_log_file(plugin_iz: isize, filename: String, log_level: String) -> Result
     }
 }
 
+#[rustler::nif]
+fn plugin_has_function(plugin_iz: isize, function_name: String) -> Result<bool, Error> {
+    let plugin = &Plugin(plugin_iz);
+    Ok(plugin.has_function(function_name))
+}
+
 rustler::init!("Elixir.Extism.Native", [
     plugin_new_with_manifest,
     call_plugin,
     update_manifest,
     set_log_file,
+    plugin_has_function,
 ]);
 //load = load);
 

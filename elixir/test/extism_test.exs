@@ -34,4 +34,9 @@ defmodule ExtismTest do
   test "set_log_file" do
     assert Extism.Plugin.set_log_file(new_plugin(), "/tmp/logfile.log", "debug")
   end
+
+  test "has_function" do
+    assert Extism.Plugin.has_function(new_plugin(), "count_vowels")
+    assert !Extism.Plugin.has_function(new_plugin(), "unknown")
+  end
 end
