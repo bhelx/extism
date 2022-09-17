@@ -43,9 +43,24 @@ fn call_plugin(plugin_iz: isize, name: String, input: String) -> Result<String, 
     }
 }
 
+ #[rustler::nif]
+fn update_manifest(plugin_iz: isize, manifest_payload: String, wasi: bool) -> Result<bool, Error> {
+    let plugin = &mut Plugin(plugin_iz);
+    match serde_json::from_str(&manifest_payload) {
+        Ok(manifest) => {
+            match plugin.update_manifest(&manifest, wasi) {
+                Err(_e) => Err(Error::Term(Box::new("Could not update manifest"))),
+                Ok(updated) => Ok(updated)
+            }
+        },
+        Err(_e) => Err(Error::Term(Box::new("Could not parse manifest")))
+    }
+}
+
 rustler::init!("Elixir.Extism.Native", [
     plugin_new_with_manifest,
     call_plugin,
+    update_manifest,
 ]);
 //load = load);
 

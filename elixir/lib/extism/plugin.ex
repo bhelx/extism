@@ -31,6 +31,14 @@ defmodule Extism.Plugin do
       res -> {:ok, res}
     end
   end
+
+  def update(plugin, manifest, wasi) when is_map(manifest) do
+    {:ok, manifest_payload} = JSON.encode(manifest)
+    case Extism.Native.update_manifest(plugin.resource, manifest_payload, wasi) do
+      {:error, err} -> {:error, err}
+      res -> {:ok, res}
+    end
+  end
 end
 
 defimpl Inspect, for: Extim.Plugin do
