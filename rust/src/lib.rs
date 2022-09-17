@@ -8,12 +8,6 @@ mod bindings;
 #[repr(transparent)]
 pub struct Plugin(isize);
 
-impl From<Plugin> for isize {
-    fn from(p: Plugin) -> Self {
-        p.0 as isize
-    }
-}
-
 impl From<isize> for Plugin {
     fn from(i: isize) -> Self {
         Plugin(i)
