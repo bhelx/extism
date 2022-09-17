@@ -8,7 +8,6 @@ mod atoms {
     rustler::atoms! {
         ok,
         error,
-        eof,
         unknown // Other error
     }
 }
