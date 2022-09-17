@@ -56,6 +56,7 @@ jobs:
         run: |
           cd elixir
           mix deps.get
+          mix compile
           mix test
 
       - name: Setup Go env
