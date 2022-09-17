@@ -47,34 +47,6 @@ jobs:
         shell: bash
         run: sudo make install
 
-      - name: Setup Elixir Host SDK
-        uses: erlef/setup-beam@v1
-        with:
-          experimental-otp: true
-          otp-version: '25.0'
-          elixir-version: '1.14.0'
-
-      - name: Test Elixir Host SDK Get Deps
-        run: cd elixir && mix deps.get
-
-      - name: Test Elixir Host SDK Deps Compile
-        run: cd elixir && mix deps.compile 
-
-      - name: Test Elixir Host SDK Deps Compile
-        run: cd elixir && mix compile --warnings-as-errors
-
-      - name: Test Elixir Host SDK list content
-        run: |
-          ls -lah /home/runner/work/extism/extism/elixir/_build/
-          ls -lah /home/runner/work/extism/extism/elixir/_build/test/
-          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/
-          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/
-          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/
-          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/native/
-
-      - name: Test Elixir Host SDK
-        run: cd elixir && mix test
-
       - name: Setup Go env
         uses: actions/setup-go@v3
 
@@ -122,6 +94,35 @@ jobs:
 
       - name: Test Rust Host SDK
         run: LD_LIBRARY_PATH=/usr/local/lib cargo test --release -p ${{ env.RUST_SDK_CRATE }}
+
+      - name: Setup Elixir Host SDK
+        uses: erlef/setup-beam@v1
+        with:
+          experimental-otp: true
+          otp-version: '25.0'
+          elixir-version: '1.14.0'
+
+      - name: Test Elixir Host SDK Get Deps
+        run: cd elixir && mix deps.get
+
+      - name: Test Elixir Host SDK Deps Compile
+        run: cd elixir && mix deps.compile
+
+      - name: Test Elixir Host SDK Deps Compile
+        run: cd elixir && mix compile --warnings-as-errors
+
+      - name: Test Elixir Host SDK list content
+        run: |
+          ls -lah /home/runner/work/extism/extism/elixir/_build/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/
+          ls -lah /home/runner/work/extism/extism/elixir/_build/test/lib/extism/priv/native/
+
+      - name: Test Elixir Host SDK
+        run: cd elixir && mix test
+
 
       # - name: Setup OCaml env
       #   uses: ocaml/setup-ocaml@v2
