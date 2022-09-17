@@ -6,7 +6,7 @@ defmodule ExtismTest do
     path = Path.join([__DIR__, "../../wasm/code.wasm"])
     manifest = %{wasm: [%{path: path}]}
     result =
-       with {:ok, plugin} <- Extism.Plugin.new(manifest),
+       with {:ok, plugin} <- Extism.Plugin.new(manifest, false),
             {:ok, output} <- Extism.Plugin.call(plugin, "count_vowels", "this is a test"),
          do: JSON.decode(output)
 

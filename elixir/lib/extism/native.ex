@@ -3,7 +3,7 @@ defmodule Extism.Native do
   otp_app: :extism,
   crate: :extism_nif
 
-  def plugin_new_with_manifest(_manifest), do: error()
+  def plugin_new_with_manifest(_manifest, _wasi), do: error()
   def call_plugin(_plugin, _name, _input), do: error()
 
   defp error, do: :erlang.nif_error(:nif_not_loaded)

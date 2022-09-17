@@ -17,9 +17,9 @@ defmodule Extism.Plugin do
     }
   end
 
-  def new(manifest) when is_map(manifest) do
+  def new(manifest, wasi \\ false) when is_map(manifest) do
     {:ok, manifest_payload} = JSON.encode(manifest)
-    case Extism.Native.plugin_new_with_manifest(manifest_payload) do
+    case Extism.Native.plugin_new_with_manifest(manifest_payload, wasi) do
       {:error, err} -> {:error, err}
       res -> {:ok, Extism.Plugin.wrap_resource(res)}
     end
