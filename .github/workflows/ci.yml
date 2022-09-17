@@ -46,7 +46,7 @@ jobs:
         run: sudo make install
 
       - name: Setup Elixir Host SDK
-        uses: erlef/setup-elixir@v1
+        uses: erlef/setup-beam@v1
         with:
           experimental-otp: true
           otp-version: '25.0'
