@@ -11,6 +11,8 @@ jobs:
   build_and_test:
     name: Build & Test
     runs-on: ${{ matrix.os }}
+    env:
+      MIX_ENV: test
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -92,6 +94,21 @@ jobs:
 
       - name: Test Rust Host SDK
         run: LD_LIBRARY_PATH=/usr/local/lib cargo test --release -p ${{ env.RUST_SDK_CRATE }}
+
+      - name: Setup Elixir Host SDK
+        uses: erlef/setup-beam@v1
+        with:
+          experimental-otp: true
+          otp-version: '25.0.4'
+          elixir-version: '1.14.0'
+
+      - name: Test Elixir Host SDK
+        run: |
+         cd elixir &&
+         mix deps.get &&
+         mix deps.compile &&
+         mix compile &&
+         mix test
 
       # - name: Setup OCaml env
       #   uses: ocaml/setup-ocaml@v2
